@@ -1,0 +1,27 @@
+#!/usr/bin/bash -eu
+
+set +u
+TAG=$1
+DOCUMENTS_DIR=$2
+set -u
+
+if [ ! -d ${DOCUMENTS_DIR} ]; then
+    mkdir -p ${DOCUMENTS_DIR}
+fi
+
+docker login
+
+NUM_OF_LOGICAL_PROCESSORS=$(grep processor /proc/cpuinfo | wc -l)
+CPU_CORES=0-$((${NUM_OF_LOGICAL_PROCESSORS} - 1))
+MEM_LIMIT_GB=$(free -g | sed -n 2p | awk '{ print $7 }')
+
+docker run \
+    --interactive \
+    --tty \
+    --cpuset-cpus        "${CPU_CORES}" \
+    --memory             "${MEM_LIMIT_GB}G" \
+    --memory-reservation "${MEM_LIMIT_GB}G" \
+    --entrypoint         bash \
+    --mount type=bind,source="${DOCUMENTS_DIR}",target="${HOME}/Documents" \
+    "${TAG}"
+    
