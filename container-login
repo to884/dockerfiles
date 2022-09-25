@@ -1,9 +1,45 @@
 #!/usr/bin/bash -eu
 
+#-----------------------------------------------------------------------------
+function usage () {
+    echo "$(basename $0) <Tag> (<DockerHub account name>)" 2>&1;
+}
+
+#-----------------------------------------------------------------------------
+# Docker イメージからコンテナを作成しログインする
+# $1 : タグ名 = DockerHub アカウント名(省略可）/ Dockerfile のあるディレクトリ
+# 例 : xxx/brew-base or brew-base
+# $2 : 作業用ディレクトリとしてマウントするホストのディレクトリパス
+#-----------------------------------------------------------------------------
+EXEC_DIR=$(cd $(dirname $0) && pwd)
+
 set +u
-TAG=$1
-DOCUMENTS_DIR=$2
+TAG_NAME=$(echo $1 | grep "/")
+DOCUMENT_DIR=$2
 set -u
+
+if [ -n "${TAG_NAME}" ]; then
+    ACCOUNT=$(echo ${TAG_NAME} | cut -d "/" -f1)
+    IMAGE_DIR=$(echo ${TAG_NAME} | cut -d "/" -f2)
+else
+    ACCOUNT=
+    TAG_NAME=$1
+    IMAGE_DIR="${TAG_NAME}"
+fi
+
+if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
+    echo -e "ERROR: No such directory : ${IMAGE_DIR}\n" >&2;
+    usage
+    echo -e "\nPlease select a directory from the following list:"
+    ls -1F | grep -E "^.+\/$" | sed -E "s|(.+)/$|    \1|g"
+    exit 1
+fi
+
+if [ -z "${DOCUMENT_DIR}" ]; then
+    echo -e "ERROR: Specify the directory name of the host to mount."
+    usage
+    exit 1
+fi
 
 if [ ! -d ${DOCUMENTS_DIR} ]; then
     mkdir -p ${DOCUMENTS_DIR}
@@ -23,5 +59,6 @@ docker run \
     --memory-reservation "${MEM_LIMIT_GB}G" \
     --entrypoint         bash \
     --mount type=bind,source="${DOCUMENTS_DIR}",target="${HOME}/Documents" \
-    "${TAG}"
+    --file               "${EXEC_DIR}/${IMAGE_DIR}/Dockerfile"
+    "${IMAGE_DIR}"
     
