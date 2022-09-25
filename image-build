@@ -41,6 +41,7 @@ if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
     echo -e "ERROR: No such directory : ${IMAGE_DIR}\n" >&2;
     usage
     echo -e "\nPlease select a directory from the following list:"
+    # ディレクトリのリストを表示する
     ls -1F | grep -E "^.+\/$" | sed -E "s|(.+)/$|    \1|g"
     exit 1
 fi
