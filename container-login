@@ -14,10 +14,12 @@ function usage () {
 EXEC_DIR=$(cd $(dirname $0) && pwd)
 
 set +u
+# 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
 TAG_NAME=$(echo $1 | grep "/")
 DOCUMENT_DIR=$2
 set -u
 
+# 引数に / が含まれていれば、'/' の前後をアカウント名とディレクトリ名に分ける
 if [ -n "${TAG_NAME}" ]; then
     ACCOUNT=$(echo ${TAG_NAME} | cut -d "/" -f1)
     IMAGE_DIR=$(echo ${TAG_NAME} | cut -d "/" -f2)
@@ -27,25 +29,23 @@ else
     IMAGE_DIR="${TAG_NAME}"
 fi
 
-if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
-    echo -e "ERROR: No such directory : ${IMAGE_DIR}\n" >&2;
-    usage
-    echo -e "\nPlease select a directory from the following list:"
-    ls -1F | grep -E "^.+\/$" | sed -E "s|(.+)/$|    \1|g"
-    exit 1
+# アカウント名が指定されている場合は、DockerHub にログインする
+if [ -n "${ACCOUNT}" ]; then
+    docker login
+    ACCOUNT="${ACCOUNT}/"
 fi
 
+# ホスト側のマウントディレクトリを指定しているかを判定する
 if [ -z "${DOCUMENT_DIR}" ]; then
     echo -e "ERROR: Specify the directory name of the host to mount."
     usage
     exit 1
 fi
 
+# ホスト側のディレクトリが存在しない場合は、ディレクトリを作成する
 if [ ! -d ${DOCUMENTS_DIR} ]; then
     mkdir -p ${DOCUMENTS_DIR}
 fi
-
-docker login
 
 NUM_OF_LOGICAL_PROCESSORS=$(grep processor /proc/cpuinfo | wc -l)
 CPU_CORES=0-$((${NUM_OF_LOGICAL_PROCESSORS} - 1))

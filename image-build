@@ -16,8 +16,10 @@ DOCKER_BULDKIT=1
 EXEC_DIR=$(cd $(dirname $0) && pwd)
 
 set +eu
+# 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
 TAG_NAME=$(echo $1 | grep "/")
 
+# 引数に / が含まれていれば、'/' の前後をアカウント名とディレクトリ名に分ける
 if [ -n "${TAG_NAME}" ]; then
     ACCOUNT=$(echo ${TAG_NAME} | cut -d "/" -f1)
     IMAGE_DIR=$(echo ${TAG_NAME} | cut -d "/" -f2)
@@ -28,11 +30,13 @@ else
 fi
 set -eu
 
+# アカウント名が指定されている場合は、DockerHub にログインする
 if [ -n "${ACCOUNT}" ]; then
     docker login
     ACCOUNT="${ACCOUNT}/"
 fi
 
+# 指定したディレクトリが存在するか確認する
 if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
     echo -e "ERROR: No such directory : ${IMAGE_DIR}\n" >&2;
     usage
