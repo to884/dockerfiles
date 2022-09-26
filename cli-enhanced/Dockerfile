@@ -1,6 +1,6 @@
 #-----------------------------------------------------------------------------
 # Linuxbrew
-
+ARG ACCOUNT
 FROM ${ACCOUNT}brew-base:latest
 
 ARG USERNAME=ubuntu
@@ -10,9 +10,9 @@ WORKDIR ${HOME}
 COPY --chown=${USERNAME}:${USERNAME} .tmux.conf  .tmux.conf
 COPY --chown=${USERNAME}:${USERNAME} powerline .config/powerline
 COPY --chown=${USERNAME}:${USERNAME} .gitconfig .gitconfig
+COPY --chown=${USERNAME}:${USERNAME} .gitcredentials .gitcredentials
 COPY --chown=${USERNAME}:${USERNAME} topgrade.toml .config/topgrade.toml
 COPY --chown=${USERNAME}:${USERNAME} tealdeer.config.toml .config/tealdeer/config.toml
-RUN echo $(whoami)
 RUN brew install --quiet \
 #-----------------------------------------------------------------------------
 # python
@@ -104,6 +104,11 @@ RUN brew install --quiet \
 #-----------------------------------------------------------------------------
  && brew install --quiet \
       git-delta \
+ && GIT_USER=$(grep "name" .gitcredentials | awk '{ print $3 }') \
+ && GIT_EMAIL=$(grep "email" .gitcredentials | awk '{ print $3 }') \
+ && sed -i "s/\${GIT_USER}/${GIT_USER}/" .gitconfig \
+ && sed -i "s/\${GIT_EMAIL}/${GIT_EMAIL}/" .gitconfig \
+ && rm .gitcredentials \ 
 #-----------------------------------------------------------------------------
 # hexyl
 # コマンドラインの HEX ビューア

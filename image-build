@@ -48,6 +48,25 @@ if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
     exit 1
 fi
 
+# イメージ個別の情報が欲しい場合はここに記述する。
+case "${IMAGE_DIR}" in
+    "cli-enhanced")
+        if [ ! -e ".gitcredentials" ]; then
+            echo -e "Git で使用するユーザー名を入力してください："
+            read GIT_USER
+            echo -e "Git で使用するメールアドレスを入力してください:"
+            read GIT_EMAIL
+            if [ -z $(echo ${GIT_EMAIL} | grep -E "^[A-Za-z0-9_\.\+\-]+@[A-Za-z0-9][A-Za-z0-9\.\-]+\.[A-Za-z]+") ]; then
+                echo "メールアドレスが正しくありません。" >&2;
+                exit 1
+            fi
+            echo "name = ${GIT_USER}" > "${EXEC_DIR}/cli-enhanced/.gitcredentials"
+            echo "email = ${GIT_EMAIL}" >> "${EXEC_DIR}/cli-enhanced/.gitcredentials"
+        fi
+        ;;
+    *) ;;
+esac
+
 # 論理プロセッサ数
 NUM_OF_LOGICAL_PROCESSORS=$(grep processor /proc/cpuinfo | wc -l)
 # コア (0～(n-1))
