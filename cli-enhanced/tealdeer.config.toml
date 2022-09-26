@@ -1,0 +1,40 @@
+[style.description]
+foreground = { rgb = { r = 223, g = 227, b = 231 }}
+underline = false
+bold = true
+italic = false
+
+[style.command_name]
+foreground = { rgb = { r = 0, g = 120, b = 212 } }
+underline = false
+bold = false
+italic = false
+
+[style.example_text]
+foreground = { rgb = { r = 157, g = 203, b = 239 } }
+underline = false
+bold = true
+italic = false
+
+[style.example_code]
+foreground = { rgb = { r = 104, g = 175, b = 230 } }
+underline = false
+bold = true
+italic = false
+
+[style.example_variable]
+foreground = { rgb = { r = 119, g = 137, b = 154 } }
+underline = false
+bold = true
+italic = false
+
+[display]
+compact = true
+use_pager = false
+
+[updates]
+auto_update = false
+auto_update_interval_hours = 720
+
+[directories]
+custom_pages_dir = "/home/${USER}/.local/share/tealdeer/pages/"

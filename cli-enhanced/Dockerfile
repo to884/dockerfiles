@@ -11,6 +11,7 @@ COPY --chown=${USERNAME}:${USERNAME} .tmux.conf  .tmux.conf
 COPY --chown=${USERNAME}:${USERNAME} powerline .config/powerline
 COPY --chown=${USERNAME}:${USERNAME} .gitconfig .gitconfig
 COPY --chown=${USERNAME}:${USERNAME} topgrade.toml .config/topgrade.toml
+COPY --chown=${USERNAME}:${USERNAME} tealdeer.config.toml .config/tealdeer/config.toml
 RUN echo $(whoami)
 RUN brew install --quiet \
 #-----------------------------------------------------------------------------
@@ -94,6 +95,8 @@ RUN brew install --quiet \
 #-----------------------------------------------------------------------------
  && brew install --quiet \
       tealdeer \
+ && tldr --update \
+ && sed -i "s/\${USER}/${USERNAME}/" .config/tealdeer/config.toml \
 #-----------------------------------------------------------------------------
 # delta
 # git および diff 出力用のシンタックス・ハイライティング・ページャー
