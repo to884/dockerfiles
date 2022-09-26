@@ -96,6 +96,7 @@ USER ${USERNAME}
 WORKDIR /home/${USERNAME}
 ENV HOME=/home/${USERNAME}
 RUN mkdir -p .config \
+ && echo "alias sudo='sudo -i'" >> .bashrc \
  && echo "eval \"\$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"" >> .bashrc \
  && echo "export PATH=\"${HOME}/.local/bin:${PATH}\"" >> .bashrc \
  && mkdir -p Documents && chown -R ${USERNAME}:${USERNAME} .
