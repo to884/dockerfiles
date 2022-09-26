@@ -54,12 +54,17 @@ case "${IMAGE_DIR}" in
         if [ ! -e ".gitcredentials" ]; then
             echo -e "Git で使用するユーザー名を入力してください："
             read GIT_USER
-            echo -e "Git で使用するメールアドレスを入力してください:"
-            read GIT_EMAIL
-            if [ -z $(echo ${GIT_EMAIL} | grep -E "^[A-Za-z0-9_\.\+\-]+@[A-Za-z0-9][A-Za-z0-9\.\-]+\.[A-Za-z]+") ]; then
-                echo "メールアドレスが正しくありません。" >&2;
-                exit 1
-            fi
+            VALID_EMAIL=
+            while [ -n "${VALID_EMAIL}"]
+            do
+                echo -e "Git で使用するメールアドレスを入力してください:"
+                read GIT_EMAIL
+                if [ -z $(echo ${GIT_EMAIL} | grep -E "^[A-Za-z0-9_\.\+\-]+@[A-Za-z0-9][A-Za-z0-9\.\-]+\.[A-Za-z]+") ]; then
+                    echo -e "\e[31mメールアドレスが正しくありません。\e[m\n" >&2;
+                else
+                    VALID_EMAIL="true"
+                fi
+            done
             echo "name = ${GIT_USER}" > "${EXEC_DIR}/cli-enhanced/.gitcredentials"
             echo "email = ${GIT_EMAIL}" >> "${EXEC_DIR}/cli-enhanced/.gitcredentials"
         fi
