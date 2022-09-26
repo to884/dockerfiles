@@ -5,11 +5,11 @@ Ubuntu をベースに、[Linuxbrew](https://docs.brew.sh/Homebrew-on-Linux) を
 
 ## Docker イメージについて
 
-各ディレクトリに Dockerfile が存在しますが、それぞれの Docker イメージの用途は次のようになります。
+各ディレクトリに Dockerfile が存在し、それぞれの Docker イメージの用途は次のようになります。
 
 | ディレクトリ | 用途 |
 | :------------ | :------------------ |
-| `brew-base` | 開発用ユーザーの作成と `linuxbrwe` のインストールおよび設定が行われる |
+| `brew-base` | 開発用ユーザーの作成と `linuxbrwe` のインストールおよび設定を行います。 |
 | `cli-enhanced` | [`tmux`](https://github.com/tmux/tmux/wiki)、[`starship`](https://starship.rs/) や、Linux の基本コマンド（`ls`、`grep`、`find`、`sed` 等）の代替ツールをインストールし CLI 環境を強化します。それぞれのツールは基本コマンドより高機能であり、ほとんどが Rust で実装されています。 |
 
 詳細については、各ディレクトリにある `Dockerfile` を参照してください。
@@ -25,6 +25,12 @@ $ ./image-build cli-enhanced user01
 ```
 
 ユーザーについては省略可能であり、省略した場合はホスト側 OS の現在の実行ユーザーの名前が使用されます。
+
+また、DockerHub などの Docker レジストリのアカウント名を追加できます。その場合は次のようになります。
+
+```bash
+$ ./image-build アカウント名/cli-enhanced user01
+```
 
 ## Docker コンテナを開発環境として使用するには
 
