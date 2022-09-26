@@ -7,6 +7,7 @@ FROM ubuntu:jammy
 # Default user name
 #-----------------------------------------------------------------------------
 ARG USERNAME=ubuntu
+ARG UID=1000
 ARG DEBIAN_FRONTEND=nointeractive
 
 RUN apt-get update \
@@ -38,9 +39,23 @@ RUN apt-get update \
 # Create users
 #-----------------------------------------------------------------------------
  && localedef -i en_US -f UTF-8 en_US.UTF-8 \
- && useradd -G sudo -m -s /bin/bash linuxbrew \
- && useradd -G sudo -m -s /bin/bash ${USERNAME} \
- && sed -i "s#(ALL:ALL)#NOPASSWD:#g" /etc/sudoers
+ && useradd \
+      --uid         ${UID} \
+      --user-group \
+      --groups      sudo \
+      --create-home \
+      --shell       /bin/bash \
+      ${USERNAME} \
+ && useradd \
+      --user-group \
+      --groups      sudo \
+      --create-home \
+      --shell       /bin/bash \
+      linuxbrew \
+ && sed -i "s#(ALL:ALL)#NOPASSWD:#g" /etc/sudoers \
+ && echo "export PATH=/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linubrew/sbin:${PATH}" \
+       > /etc/profile.d/02-set-path.sh \
+ && chmod +x /etc/profile.d/02-set-path.sh
 ENV HOMEBREW_AUTOREMOVE=
 ENV HOMEBREW_NO_INSTALL_CLEANUP=1
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linubrew/sbin:${PATH}"
@@ -84,4 +99,4 @@ RUN mkdir -p .config \
  && echo "eval \"\$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"" >> .bashrc \
  && echo "export PATH=\"${HOME}/.local/bin:${PATH}\"" >> .bashrc \
  && mkdir -p Documents && chown -R ${USERNAME}:${USERNAME} .
-VOLUME ["Documents"]
+VOLUME ["/home/${USERNAME}/Documents"]

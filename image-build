@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------
 function usage () {
-    echo "$(basename $0) <Dockerfile directory> (<DockerHub account name>)" 2>&1;
+    echo "$(basename $0) <Dockerfile directory> <User>" 2>&1;
 }
 
 #-----------------------------------------------------------------------------
@@ -18,6 +18,8 @@ EXEC_DIR=$(cd $(dirname $0) && pwd)
 set +eu
 # 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
 TAG_NAME=$(echo $1 | grep "/")
+# ユーザー
+USERNAME=$2
 
 # 引数に / が含まれていれば、'/' の前後をアカウント名とディレクトリ名に分ける
 if [ -n "${TAG_NAME}" ]; then
@@ -46,17 +48,51 @@ if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
     exit 1
 fi
 
+# 論理プロセッサ数
 NUM_OF_LOGICAL_PROCESSORS=$(grep processor /proc/cpuinfo | wc -l)
+# コア (0～(n-1))
 CPU_CORES=0-$((${NUM_OF_LOGICAL_PROCESSORS} - 1))
+# 利用可能なメモリ
 MEM_LIMIT_GB=$(free -g | sed -n 2p | awk '{ print $7 }')
 
-docker builder build \
-    --tag         "${TAG_NAME}:latest" \
-    --cpuset-cpus "${CPU_CORES}" \
-    --memory      "${MEM_LIMIT_GB}G" \
-    --progress    plain \
-    --file        "${EXEC_DIR}/${IMAGE_DIR}/Dockerfile" \
-    --build-arg   ACCOUNT=${ACCOUNT} \
-    --build-arg   USERNAME=$(whoami) \
-    "${EXEC_DIR}/${IMAGE_DIR}"
+# Dockerfile でユーザーを引数にしているかを確認する
+set +e
+ARG_USER=$(grep "ARG USERNAME" "${EXEC_DIR}/${IMAGE_DIR}/Dockerfile")
+set -e
+
+if [ -n "${ARG_USER}" ]; then
+    # ユーザーが省略されている場合は、デフォルトのユーザーを作成する
+    if [ -z "${USERNAME}" ]; then
+        USERNAME=$(whoami)
+        ID=$(id -u "${USERNAME}")
+    else
+        set +e
+        ID=$(id -u "${USERNAME}")
+        set -E
+        if [ -z "${ID}" ]; then
+            ID=1000
+        fi
+    fi
+    
+    docker builder build \
+        --tag         "${TAG_NAME}:latest" \
+        --cpuset-cpus "${CPU_CORES}" \
+        --memory      "${MEM_LIMIT_GB}G" \
+        --progress    plain \
+        --file        "${EXEC_DIR}/${IMAGE_DIR}/Dockerfile" \
+        --build-arg   ACCOUNT=${ACCOUNT} \
+        --build-arg   USERNAME=${USERNAME} \
+        --build-arg   UID=${ID} \
+        "${EXEC_DIR}/${IMAGE_DIR}"
+else
+    docker builder build \
+        --tag         "${TAG_NAME}:latest" \
+        --cpuset-cpus "${CPU_CORES}" \
+        --memory      "${MEM_LIMIT_GB}G" \
+        --progress    plain \
+        --file        "${EXEC_DIR}/${IMAGE_DIR}/Dockerfile" \
+        --build-arg   ACCOUNT=${ACCOUNT} \
+        "${EXEC_DIR}/${IMAGE_DIR}"
+fi
+
 
