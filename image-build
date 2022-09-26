@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------
 function usage () {
-    echo "$(basename $0) <Dockerfile directory> <User>" 2>&1;
+    echo "$(basename $0) <Dockerfile directory> [User]" 2>&1;
 }
 
 #-----------------------------------------------------------------------------
@@ -55,7 +55,7 @@ case "${IMAGE_DIR}" in
             echo -e "Git で使用するユーザー名を入力してください："
             read GIT_USER
             VALID_EMAIL=
-            while [ -n "${VALID_EMAIL}"]
+            while [ -n "${VALID_EMAIL}" ]
             do
                 echo -e "Git で使用するメールアドレスを入力してください:"
                 read GIT_EMAIL
