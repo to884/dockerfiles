@@ -2,33 +2,89 @@
 
 #-----------------------------------------------------------------------------
 function usage () {
-    echo "$(basename $0) <TAG> [User]" 2>&1;
+echo -e "
+使い方: container-login [OPTION] TAG
+brew-base の新しいコンテナを実行しログインします。
+例: container-login -u 'user' brew-base
+
+\e[33;1m引数:
+    \e[32mTAG
+        \e[37mイメージタグを指定します。
+        DockerHub のアカウント名を使用する形式（'account/brew-base'）
+        もしくはタグ名のみの形式（'brew-base'）を指定することができます。
+
+\e[33;1mオプション:
+    \e[32m-u\e[37m, \e[32m--user <ユーザー名>
+        \e[37m省略可。コンテナで使用するユーザー名を指定します。
+        省略した場合は、現在のホスト側ユーザー名が指定されます。
+\e[m
+" 2>&1;
 }
 
 #-----------------------------------------------------------------------------
 # Docker イメージからコンテナを作成しログインする
 # $1 : タグ名 = DockerHub アカウント名(省略可）/ Dockerfile のあるディレクトリ
 # 例 : xxx/brew-base or brew-base
-# $2 : 作業用ディレクトリとしてマウントするホストのディレクトリパス
 #-----------------------------------------------------------------------------
 EXEC_DIR=$(cd $(dirname $0) && pwd)
 
-set +u
-if [ ${#@} -ne 1 ] && [ ${#@} -ne 2 ]; then
+if [ $# -eq 0 ]; then
+    echo -e "\e[31merror: \e[37m少なくとも1つの引数が必要です。\e[m" >&2;
     usage
     exit 1
 fi
 
-# 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
+VALID_ARGS=$(getopt -o hu: --long help,user: -- "$@")
+# getopt の返り値をチェックして、失敗ならエラー終了
+if [[ $? -ne 0 ]]; then
+    exit 1;
+fi
+
+TAG=
+USERNAME=
+
+eval set -- "${VALID_ARGS}"
+while [ : ]; do
+    case "$1" in
+        -u | --user)
+            USERNAME=$2
+            shift 2
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        --) shift;
+            break
+            ;;
+    esac
+done
+
+# 引数が少ない場合
+if [ $# -lt 1 ]; then
+    echo -e "\e[31merror: \e[37mタグを指定してください。\e[m" >&2;
+    usage
+    exit 1
+# 引数が多すぎる場合
+elif [ $# -gt 1 ]; then
+    echo -e "\e[31merror: \e[37m引数が多すぎます。\e[m" >&2;
+    usage
+    exit 1
+fi
+
 TAG=$1
-USERNAME=$2
+
 set -u
 
+# ユーザーが省略されている場合
 if [ -z "${USERNAME}" ]; then
+    # イメージのビルド時に指定したユーザーを取得
     if [ -e "${EXEC_DIR}/.user" ]; then
         USERNAME=$(cat ${EXEC_DIR}/.user)
     else
         USERNAME=$(whoami)
+        # 次回、ユーザーを省略できるようにファイルを出力
+        echo "${USERNAME}" > ${EXEC_DIR}/.user
     fi
 fi
 

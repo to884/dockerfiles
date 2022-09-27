@@ -36,8 +36,8 @@ $ ./image-build アカウント名/cli-enhanced user01
 
 | ディレクトリ | 引数 | 例 |
 | :--------------- | :---------------- | :--------- |
-| `brew-base`  | "タグ（`account/tag` もしくは `tag` の形式" "作成ユーザー名(省略可。省略した場合は現在のユーザー)" | `image-build brew-base p1234567` |
-| `cli-enhanced` | "タグ（`account/tag` もしくは `tag` の形式" "作成ユーザー名(省略可。省略した場合は現在のユーザー)" | `image-build cli-enhanced p1234567` |
+| `brew-base`  | "タグ（`account/tag` もしくは `tag` の形式" "作成ユーザー名(省略可。省略した場合は現在のユーザー)" | `image-build brew-base --user p1234567` |
+| `cli-enhanced` | "タグ（`account/tag` もしくは `tag` の形式" "作成ユーザー名(省略可。省略した場合は現在のユーザー)" | `image-build cli-enhanced --user p1234567` |
 
 ## Docker コンテナを開発環境として使用するには
 
@@ -46,7 +46,7 @@ Docker コンテナを使用する場合は、このリポジトリのルート�
 `container-login` スクリプトの引数は、Docker イメージタグと作業用ディレクトリとしてバインドするホスト側のディレクトリです。たとえば次のように使用します。
 
 ```bash
-./container-login cli-enhanced ~/Documents
+./container-login cli-enhanced --cred-dir ~/Credentials --work-dir ~/Documents
 ```
 
 スクリプトを実行すると、Docker コンテナはホスト側のディレクトリ `~/Documents` をコンテナの `${HOME}/Documents` にバインドし、コンテナに Docker イメージをビルドする際に作成したユーザーでログインします。
@@ -55,12 +55,7 @@ Docker コンテナを使用する場合は、このリポジトリのルート�
 >
 > コンテナで `tmux` を使用する場合は、ホスト OS 端末で `tmux` を使用しないようにしてください。
 
-現状でのそれぞれのディレクトリに対する `container-login` の引数は次のとおりです。
-
-| ディレクトリ | 引数 | 例 |
-| :--------------- | :---------------- | :--------- |
-| `brew-base`  | 1. "タグ（`account/tag` もしくは `tag` の形式"<br /> 2. "作成ユーザー名(省略可。省略した場合はイメージをビルドした時のユーザー)" | `container-login brew-base p1234567` |
-| `cli-enhanced` | 1. "タグ（`account/tag` もしくは `tag` の形式"<br /> 2. "シークレットが入っているホスト側のディレクトリ"<br /> 3. "ホスト側の作業用ディレクトリ"<br /> 4. "作成ユーザー名(省略可。省略した場合はイメージをビルドした時のユーザー)" | `container-login  cli-enhanced ~/credentials ~/Documents p1234567` |
+現状でのそれぞれのディレクトリに対する `container-login` の引数は、`container-login ディレクトリ名 --help` で参照できます。
 
 ## パスワードなどのクレデンシャルをイメージに記憶させたくない場合は
 

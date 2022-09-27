@@ -2,7 +2,23 @@
 
 #-----------------------------------------------------------------------------
 function usage () {
-    echo "Usage: [OPTION] $(basename $0) TAG ..."
+echo -e "
+使い方: container-login [OPTION]... TAG
+指定したイメージの新しいコンテナを実行しログインします。
+例: container-login -u 'user' brew-base
+
+\e[33;1m引数:
+    \e[32mTAG
+        \e[37mイメージタグを指定します。
+        DockerHub のアカウント名を使用する形式（'account/tag'）
+        もしくはタグ名のみの形式（'tag'）を指定することができます。
+
+\e[33;1mオプション:
+    \e[32m-u\e[37m, \e[32m--user <ユーザー名>
+        \e[37m省略可。コンテナで使用するユーザー名を指定します。
+        省略した場合は、現在のホスト側ユーザー名が指定されます。
+\e[m
+"
 }
 
 #-----------------------------------------------------------------------------
@@ -13,23 +29,23 @@ function usage () {
 #-----------------------------------------------------------------------------
 EXEC_DIR=$(cd $(dirname $0) && pwd)
 
-set +u
-if [ -z $1 ]; then
+if [ $# -eq 0 ]; then
+    echo -e "\e[31merror: \e[37m少なくとも1つの引数が必要です。\e[m" >&2;
     usage
     exit 1
 fi
 
-if [ $(echo $1 | grep -E "^\-h|^\-\-help$") != ""  ]; then
+# 引数がヘルプオプションだけであれば、ヘルプを表示して終了する
+if [[ $(echo $1 | grep -E "^\-h|^\-\-help$") != ""  ]]; then
     usage
     exit 0
 fi
 
 # 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
-set +e
+set +eu
 TAG_NAME=$(echo $1 | grep "/")
-set -e
 MOUNT_DIR=$2
-set -u
+set -eu
 
 # 引数に / が含まれていれば、'/' の前後をアカウント名とディレクトリ名に分ける
 if [ -n "${TAG_NAME}" ]; then
@@ -48,9 +64,9 @@ fi
 
 # 指定したディレクトリが存在するか確認する
 if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
-    echo -e "ERROR: No such directory : ${IMAGE_DIR}\n" >&2;
+    echo -e "\e[31merror: \e[37mディレクトリが見つかりません。 ${IMAGE_DIR}\e[m" >&2;
     usage
-    echo -e "\nPlease select a directory from the following list:"
+    echo -e "\e[37m次のディレクトリを指定してください。\e[m" >&2;
     # ディレクトリのリストを表示する
     ls -1F | grep -E "^.+\/$" | sed -E "s|(.+)/$|    \1|g"
     exit 1

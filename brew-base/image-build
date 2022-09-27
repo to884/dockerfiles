@@ -2,7 +2,23 @@
 
 #-----------------------------------------------------------------------------
 function usage () {
-    echo "$(basename $0) <TAG> [User]" 2>&1;
+echo -e "
+使い方: image-build [OPTION] TAG
+Ubuntu と Linuxbrew をベースとしたイメージを作成します。
+例: image-build -u 'user' brew-base
+
+\e[33;1m引数:
+    \e[32mTAG
+        \e[37mイメージタグを指定します。
+        DockerHub のアカウント名を使用する形式（'account/brew-base'）
+        もしくはタグ名のみの形式（'brew-base'）を指定することができます。
+
+\e[33;1mオプション:
+    \e[32m-u\e[37m, \e[32m--user <ユーザー名>
+        \e[37m省略可。コンテナで使用するユーザー名を指定します。
+        省略した場合は、現在のホスト側ユーザー名が指定されます。
+\e[m
+" 2>&1;
 }
 
 #-----------------------------------------------------------------------------
@@ -15,11 +31,53 @@ DOCKER_BULDKIT=1
 
 EXEC_DIR=$(cd $(dirname $0) && pwd)
 
+if [ $# -eq 0 ]; then
+    echo -e "\e[31merror: \e[37m少なくとも1つの引数が必要です。\e[m" >&2;
+    usage
+    exit 1
+fi
+
+VALID_ARGS=$(getopt -o hu: --long help,user: -- "$@")
+# getopt の返り値をチェックして、失敗ならエラー終了
+if [[ $? -ne 0 ]]; then
+    exit 1;
+fi
+
+TAG=
+USERNAME=
+
+eval set -- "${VALID_ARGS}"
+while [ : ]; do
+    case "$1" in
+        -u | --user)
+            USERNAME=$2
+            shift 2
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        --) shift;
+            break
+            ;;
+    esac
+done
+
+# 引数が少ない場合
+if [ $# -lt 1 ]; then
+    echo -e "\e[31merror: \e[37mタグを指定してください。\e[m" >&2;
+    usage
+    exit 1
+# 引数が多すぎる場合
+elif [ $# -gt 1 ]; then
+    echo -e "\e[31merror: \e[37m引数が多すぎます。\e[m" >&2;
+    usage
+    exit 1
+fi
+
 set +eu
 # 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
 TAG_NAME=$(echo $1 | grep "/")
-# ユーザー
-USERNAME=$2
 
 # 引数に / が含まれていれば、'/' の前後をアカウント名とディレクトリ名に分ける
 if [ -n "${TAG_NAME}" ]; then
@@ -37,14 +95,16 @@ CPU_CORES=0-$((${NUM_OF_LOGICAL_PROCESSORS} - 1))
 # 利用可能なメモリ
 MEM_LIMIT_GB=$(free -g | sed -n 2p | awk '{ print $7 }')
 
-# ユーザーが省略されている場合は、デフォルトのユーザーを作成する
+# ユーザーが省略されている場合
 if [ -z "${USERNAME}" ]; then
+    # ホスト側の実行ユーザーを取得する
     USERNAME=$(whoami)
     ID=$(id -u "${USERNAME}")
 else
     set +e
     ID=$(id -u "${USERNAME}")
     set -e
+    # ホスト側に存在しないユーザーの場合は UID = 1000
     if [ -z "${ID}" ]; then
         ID=1000
     fi
@@ -61,4 +121,5 @@ docker builder build \
     --build-arg   UID=${ID} \
     "${EXEC_DIR}"
 
+# ユーザー名をキャッシュする
 echo "${USERNAME}" > ${EXEC_DIR}/.user
