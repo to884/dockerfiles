@@ -1,0 +1,66 @@
+#!/usr/bin/bash -eu
+
+#-----------------------------------------------------------------------------
+function usage () {
+    echo "$(basename $0) <TAG> <Credentials Directory> <Working Directory> [User]" 2>&1;
+}
+
+#-----------------------------------------------------------------------------
+# Docker イメージからコンテナを作成しログインする
+# $1 : タグ名 = DockerHub アカウント名(省略可）/ Dockerfile のあるディレクトリ
+# 例 : xxx/brew-base or brew-base
+# $2 : 作業用ディレクトリとしてマウントするホストのディレクトリパス
+#-----------------------------------------------------------------------------
+EXEC_DIR=$(cd $(dirname $0) && pwd)
+
+set +u
+if [ ${#@} -ne 3 ] && [ ${#@} -ne 4 ]; then
+    usage
+    exit 1
+fi
+
+# 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
+TAG=$1
+CREDENTIALS_DIR=$2
+WORKING_DIR=$3
+USERNAME=$4
+set -u
+
+# ホスト側のマウントディレクトリを指定しているかを判定する
+if [ ! -d "${CREDENTIALS_DIR}" ]; then
+    echo -e "ERROR: ホスト側のクレデンシャルディレクトリが見つかりません。"
+    usage
+    exit 1
+fi
+
+# ホスト側のディレクトリが存在しない場合は、ディレクトリを作成する
+if [ ! -d "${WORKING_DIR}" ]; then
+    echo -e "ERROR: ホスト側の作業用が見つかりません。"
+    usage
+    exit 1
+fi
+
+if [ -z "${USERNAME}" ]; then
+    if [ -e "${EXEC_DIR}/.user" ]; then
+        USERNAME=$(cat ${EXEC_DIR}/.user)
+    else
+        USERNAME=$(whoami)
+    fi
+fi
+
+NUM_OF_LOGICAL_PROCESSORS=$(grep processor /proc/cpuinfo | wc -l)
+CPU_CORES=0-$((${NUM_OF_LOGICAL_PROCESSORS} - 1))
+MEM_LIMIT_GB=$(free -g | sed -n 2p | awk '{ print $7 }')
+
+docker run \
+    --interactive \
+    --tty \
+    --cpuset-cpus        "${CPU_CORES}" \
+    --memory             "${MEM_LIMIT_GB}G" \
+    --memory-reservation "${MEM_LIMIT_GB}G" \
+    --entrypoint         bash \
+    --user               "${USERNAME}:${USERNAME}" \
+    --mount type=bind,source="${CREDENTIALS_DIR}",target="/var/credentials" \
+    --mount type=bind,source="${WORKING_DIR}",target="/home/${USERNAME}/Documents" \
+    "${TAG}"
+    

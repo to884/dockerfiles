@@ -1,0 +1,82 @@
+#!/usr/bin/bash -eu
+
+#-----------------------------------------------------------------------------
+function usage () {
+    echo "$(basename $0) <TAG> [User]" 2>&1;
+}
+
+#-----------------------------------------------------------------------------
+# 任意のイメージをビルドする
+# $1 : DockerHub アカウント名(省略可）/ Dockerfile のあるディレクトリ
+# 例 : xxx/brew-base or brew-base
+#-----------------------------------------------------------------------------
+
+DOCKER_BULDKIT=1
+
+EXEC_DIR=$(cd $(dirname $0) && pwd)
+
+set +eu
+# 引数が"アカウント/ディレクトリ"か"ディレクトリのみ"かを判定する
+TAG_NAME=$(echo $1 | grep "/")
+# ユーザー
+USERNAME=$2
+
+# 引数に / が含まれていれば、'/' の前後をアカウント名とディレクトリ名に分ける
+if [ -n "${TAG_NAME}" ]; then
+    ACCOUNT=$(echo ${TAG_NAME} | cut -d "/" -f1)
+else
+    ACCOUNT=
+    TAG_NAME=$1
+fi
+set -eu
+
+# Git に必要な情報を設定する
+if [ ! -e "${EXEC_DIR}/.gitcredentials" ]; then
+    echo -e "Git で使用するユーザー名を入力してください："
+    read GIT_USER
+    VALID_EMAIL=
+    while [ -n "${VALID_EMAIL}" ]
+    do
+        echo -e "Git で使用するメールアドレスを入力してください:"
+        read GIT_EMAIL
+        if [ -z $(echo ${GIT_EMAIL} | grep -E "^[A-Za-z0-9_\.\+\-]+@[A-Za-z0-9][A-Za-z0-9\.\-]+\.[A-Za-z]+") ]; then
+            echo -e "\e[31mメールアドレスが正しくありません。\e[m\n" >&2;
+        else
+            VALID_EMAIL="true"
+        fi
+    done
+    echo "name = ${GIT_USER}" > "${EXEC_DIR}/.gitcredentials"
+    echo "email = ${GIT_EMAIL}" >> "${EXEC_DIR}/.gitcredentials"
+fi
+
+# 論理プロセッサ数
+NUM_OF_LOGICAL_PROCESSORS=$(grep processor /proc/cpuinfo | wc -l)
+# コア (0～(n-1))
+CPU_CORES=0-$((${NUM_OF_LOGICAL_PROCESSORS} - 1))
+# 利用可能なメモリ
+MEM_LIMIT_GB=$(free -g | sed -n 2p | awk '{ print $7 }')
+
+# ユーザーが省略されている場合は、デフォルトのユーザーを作成する
+if [ -z "${USERNAME}" ]; then
+    USERNAME=$(whoami)
+    ID=$(id -u "${USERNAME}")
+else
+    set +e
+    ID=$(id -u "${USERNAME}")
+    set -e
+    if [ -z "${ID}" ]; then
+        ID=1000
+    fi
+fi
+
+docker builder build \
+    --tag         "${TAG_NAME}:latest" \
+    --cpuset-cpus "${CPU_CORES}" \
+    --memory      "${MEM_LIMIT_GB}G" \
+    --progress    plain \
+    --file        "${EXEC_DIR}/Dockerfile" \
+    --build-arg   ACCOUNT=${ACCOUNT} \
+    --build-arg   USERNAME=${USERNAME} \
+    "${EXEC_DIR}"
+
+echo "${USERNAME}" > ${EXEC_DIR}/.user

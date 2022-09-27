@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------
 function usage () {
-    echo "$(basename $0) <Tag> <Mount Dir>" 2>&1;
+    echo "$(basename $0) <Tag> ..."
 }
 
 #-----------------------------------------------------------------------------
@@ -33,7 +33,6 @@ if [ -n "${TAG_NAME}" ]; then
 else
     ACCOUNT=
     IMAGE_DIR=$1
-    TAG_NAME=
 fi
 
 # アカウント名が指定されている場合は、DockerHub にログインする
@@ -42,29 +41,15 @@ if [ -n "${ACCOUNT}" ]; then
     ACCOUNT="${ACCOUNT}/"
 fi
 
-# ホスト側のマウントディレクトリを指定しているかを判定する
-if [ -z "${MOUNT_DIR}" ]; then
-    echo -e "ERROR: Specify the directory name of the host to mount."
+# 指定したディレクトリが存在するか確認する
+if [ ! -d "${EXEC_DIR}/${IMAGE_DIR}" ]; then
+    echo -e "ERROR: No such directory : ${IMAGE_DIR}\n" >&2;
     usage
+    echo -e "\nPlease select a directory from the following list:"
+    # ディレクトリのリストを表示する
+    ls -1F | grep -E "^.+\/$" | sed -E "s|(.+)/$|    \1|g"
     exit 1
 fi
 
-# ホスト側のディレクトリが存在しない場合は、ディレクトリを作成する
-if [ ! -d ${MOUNT_DIR} ]; then
-    mkdir -p ${MOUNT_DIR}
-fi
-
-NUM_OF_LOGICAL_PROCESSORS=$(grep processor /proc/cpuinfo | wc -l)
-CPU_CORES=0-$((${NUM_OF_LOGICAL_PROCESSORS} - 1))
-MEM_LIMIT_GB=$(free -g | sed -n 2p | awk '{ print $7 }')
-
-docker run \
-    --interactive \
-    --tty \
-    --cpuset-cpus        "${CPU_CORES}" \
-    --memory             "${MEM_LIMIT_GB}G" \
-    --memory-reservation "${MEM_LIMIT_GB}G" \
-    --entrypoint         bash \
-    --mount type=bind,source="${MOUNT_DIR}",target="${HOME}/Documents" \
-    "${IMAGE_DIR}"
-    
+# 各ディレクトリの container-login にディスパッチする
+${EXEC_DIR}/${IMAGE_DIR}/container-login $@
